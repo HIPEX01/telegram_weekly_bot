@@ -1,11 +1,14 @@
 # bot.py
+import os
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
-import logging
-import asyncio
 
 # ----- CONFIG -----
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # replace with your real bot token
+BOT_TOKEN = os.environ.get("BOT_TOKEN")  # Get token from Render environment
+
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN environment variable not set!")
 
 # ----- LOGGING -----
 logging.basicConfig(
@@ -15,7 +18,7 @@ logging.basicConfig(
 
 # ----- HANDLERS -----
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send a message with buttons when the command /start is issued."""
+    """Send a message with buttons when /start is used."""
     keyboard = [
         [InlineKeyboardButton("Button 1", callback_data='1')],
         [InlineKeyboardButton("Button 2", callback_data='2')],
@@ -35,6 +38,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ----- MAIN -----
 def main():
+    # Use ApplicationBuilder without Updater (fixes Render issues)
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Add handlers
