@@ -1,66 +1,49 @@
 # bot.py
-import asyncio
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
-from apscheduler.schedulers.background import BackgroundScheduler
-from config import BOT_TOKEN, CHAT_ID, ADMIN_ID
+import logging
+import asyncio
 
-# ---------------- BUTTONS ----------------
+# ----- CONFIG -----
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # replace with your real bot token
+
+# ----- LOGGING -----
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
+# ----- HANDLERS -----
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a message with buttons when the command /start is issued."""
     keyboard = [
-        [InlineKeyboardButton("📖 Show weekly message", callback_data="show")],
-        [InlineKeyboardButton("ℹ️ Help", callback_data="help")],
+        [InlineKeyboardButton("Button 1", callback_data='1')],
+        [InlineKeyboardButton("Button 2", callback_data='2')],
+        [InlineKeyboardButton("Button 3", callback_data='3')],
+        [InlineKeyboardButton("Button 4", callback_data='4')],
+        [InlineKeyboardButton("Button 5", callback_data='5')],
+        [InlineKeyboardButton("Button 6", callback_data='6')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Hi 👋\nTap a button:", reply_markup=reply_markup)
+    await update.message.reply_text("Choose a button:", reply_markup=reply_markup)
 
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle button presses."""
     query = update.callback_query
     await query.answer()
-    if query.data == "show":
-        await query.edit_message_text("Here is your weekly message! ✅")
-    elif query.data == "help":
-        await query.edit_message_text("Use the buttons to interact with the bot.")
+    await query.edit_message_text(text=f"You pressed Button {query.data}!")
 
-# ---------------- WEEKLY MESSAGE ----------------
-async def send_weekly_message(app):
-    try:
-        await app.bot.send_message(chat_id=CHAT_ID, text="Weekly message sent! 📅")
-    except Exception as e:
-        print("Error sending weekly message:", e)
-
-def start_scheduler(app):
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(lambda: app.create_task(send_weekly_message(app)),
-                      trigger="cron", day_of_week="mon", hour=12, minute=0)
-    scheduler.start()
-
-# ---------------- ADMIN COMMAND ----------------
-async def set_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
-        await update.message.reply_text("❌ You are not allowed!")
-        return
-    new_text = " ".join(context.args)
-    if not new_text:
-        await update.message.reply_text("Usage: /set Your new weekly message")
-        return
-    global WEEKLY_MESSAGE
-    WEEKLY_MESSAGE = new_text
-    await update.message.reply_text(f"✅ Weekly message updated:\n{WEEKLY_MESSAGE}")
-
-# ---------------- MAIN ----------------
+# ----- MAIN -----
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Add handlers
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_handler(CommandHandler("set", set_message))
+    app.add_handler(CallbackQueryHandler(button_callback))
 
-    start_scheduler(app)
-
+    # Run the bot
     print("Bot is running 🤖")
-    app.run_polling(close_loop=False)
+    app.run_polling()
 
 if __name__ == "__main__":
-    WEEKLY_MESSAGE = "This is the default weekly message! 📅"
     main()
